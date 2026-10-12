@@ -1,5 +1,5 @@
-   .env
-   __pycache__/
-   scripts/
-   sample_data/
-   .venv/
+.env
+__pycache__/
+scripts/
+sample_data/
+.venv/
