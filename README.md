@@ -16,4 +16,4 @@ MongoDB 6.0+ is required ($setWindowFields, $densify). Indexes are created at st
 Tested against MongoDB 7: parallel creates, punch-ins, punch-outs and corrections; overnight shifts; the trend endpoint (gaps, weekends, shorter moving-average windows); and about 100,000 records, where all five explain outputs show IXSCAN and no COLLSCAN.
 
 ## Missing
-Nothing known. (Write here honestly anything you did not do.)
+Nothing known.
