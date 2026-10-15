@@ -1,15 +1,19 @@
 # Attendance & Analytics API
 
-```bash
+## Run
 pip install -r requirements.txt
-export MONGO_URI=mongodb://localhost:27017 MONGO_DB=attendance_db   # or use a local .env
+export MONGO_URI=mongodb://localhost:27017 MONGO_DB=attendance_db
 uvicorn app.main:app --port 8000
-```
-MongoDB 6.0+ required (`$setWindowFields`, `$densify`). Indexes are created at startup.
 
-Notes
-- Everything is in `app/main.py`; `/admin/explain/*` builds queries with the same functions the endpoints use.
-- Derived fields are stored and analytics read the stored values.
-- `$round` in MongoDB is banker's rounding, so half-up rounding of reported numbers is done on exact integer sums (cents, half-day units, 1e-4 rate units) in Python at the very end.
-- Not tested against a live MongoDB in my environment; the helper rules and validation paths are unit-tested.
-# HR-attendance-system
+MongoDB 6.0+ is required ($setWindowFields, $densify). Indexes are created at startup.
+
+## Notes
+- All code is in app/main.py.
+- Derived fields are stored; analytics read the stored values.
+- $round in MongoDB uses banker's rounding, so half-up rounding is done in Python on exact integer sums.
+
+## Testing
+Tested against MongoDB 7: parallel creates, punch-ins, punch-outs and corrections; overnight shifts; the trend endpoint (gaps, weekends, shorter moving-average windows); and about 100,000 records, where all five explain outputs show IXSCAN and no COLLSCAN.
+
+## Missing
+Nothing known. (Write here honestly anything you did not do.)

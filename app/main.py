@@ -29,7 +29,7 @@ load_dotenv()  # override=False: real environment variables take priority
 log = logging.getLogger("attendance")
 
 # tz_aware=True: PyMongo hands back aware UTC datetimes instead of naive ones.
-client = MongoClient(os.getenv("MONGO_URI", "mongodb://localhost:27017"), tz_aware=True)
+client = MongoClient(os.getenv("MONGO_URI", "mongodb://localhost:27017"), tz_aware=True,serverSelectionTimeoutMS=3000)
 db = client[os.getenv("MONGO_DB", "attendance_db")]
 
 IST = timezone(timedelta(hours=5, minutes=30))
@@ -62,12 +62,23 @@ def ensure_indexes() -> None:
     logs.create_index([("emp_code", 1), ("punch_in", -1)], name="emp_punch_in")
 
 
+_indexes_ready = False
+
+
+def ensure_indexes_once() -> None:
+    """Creates the indexes the first time MongoDB answers; a no-op afterwards."""
+    global _indexes_ready
+    if not _indexes_ready:
+        ensure_indexes()  # idempotent; raises PyMongoError while MongoDB is unreachable
+        _indexes_ready = True
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     try:
-        ensure_indexes()
-    except PyMongoError as exc:  # keep the process up; /health reports 503 until Mongo answers
-        log.warning("index creation failed: %s", exc)
+        ensure_indexes_once()
+    except PyMongoError as exc:  # keep the process up; /health retries until Mongo answers
+        log.warning("index creation failed, will retry from /health: %s", exc)
     yield
 
 
@@ -438,6 +449,10 @@ def health():
         client.admin.command("ping")
     except PyMongoError:
         raise HTTPException(503, "database unavailable")
+    try:
+        ensure_indexes_once()  # retry index creation, but never let it fail the health check
+    except PyMongoError as exc:
+        log.warning("index creation failed: %s", exc)
     return {"status": "ok"}
 
 
